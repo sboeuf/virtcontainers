@@ -824,6 +824,16 @@ func (p *Pod) startShims() error {
 
 	shimCount := 0
 	for idx := range p.containers {
+		// In case the proxy returns an empty token, this means we
+		// should assign the container ID as the token. This is the
+		// first step in supporting both Clear Containers and Kata
+		// Containers architecture. The second step is to redesign
+		// the proxy so that we can make the proxy interface better,
+		// and we would not rely on the proxy to provide the token.
+		if proxyInfos[idx].Token == "" {
+			proxyInfos[idx].Token = p.containers[idx].id
+		}
+
 		shimParams := ShimParams{
 			Container: p.containers[idx].id,
 			Token:     proxyInfos[idx].Token,

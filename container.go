@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containers/virtcontainers/pkg/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -656,6 +657,15 @@ func (c *Container) enter(cmd Cmd) (*Process, error) {
 	}
 	defer c.pod.proxy.disconnect()
 
+	// In case the proxy returns an empty token, this means we should
+	// provide a unique ID. This is the first step in supporting both
+	// Clear Containers and Kata Containers architecture. The second
+	// step is to redesign the proxy so that we can make the proxy
+	// interface better, and we would generate this ID everytime.
+	if proxyInfo.Token == "" {
+		proxyInfo.Token = fmt.Sprintf("%s-%s", c.id, uuid.Generate().String())
+	}
+
 	process, err := c.createShimProcess(proxyInfo.Token, url, cmd)
 	if err != nil {
 		return nil, err
@@ -744,6 +754,16 @@ func (c *Container) processList(options ProcessListOptions) (ProcessList, error)
 func (c *Container) createShimProcess(token, url string, cmd Cmd) (*Process, error) {
 	if c.pod.state.URL != url {
 		return &Process{}, fmt.Errorf("Pod URL %q and URL from proxy %q MUST be identical", c.pod.state.URL, url)
+	}
+
+	// In case the proxy returns an empty token, this means we should
+	// assign the container ID as the token. This is the first step in
+	// supporting both Clear Containers and Kata Containers architecture.
+	// The second step is to redesign the proxy so that we can make the
+	// proxy interface better, and we would not rely on the proxy to
+	// provide the token.
+	if token == "" {
+		token = c.id
 	}
 
 	shimParams := ShimParams{
