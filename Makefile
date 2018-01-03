@@ -1,4 +1,3 @@
-PREFIX := /usr
 BIN_DIR := $(PREFIX)/bin
 VC_BIN_DIR := $(BIN_DIR)/virtcontainers/bin
 TEST_BIN_DIR := $(VC_BIN_DIR)/test
